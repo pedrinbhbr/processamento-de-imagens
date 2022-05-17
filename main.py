@@ -193,7 +193,7 @@ def telaHaralick(selectTam_opened):
         selectTam_opened = True
         entropy = False
         homogeneity = False
-        contrast = False
+        energy = False
         width = 400
         height = 350
         # obtém metade da largura / altura da tela e largura / altura da janela
@@ -208,18 +208,18 @@ def telaHaralick(selectTam_opened):
         l.pack()
         check_entropy = IntVar()
         check_homogeneity = IntVar()
-        check_contrast = IntVar()
+        check_energy = IntVar()
         C1 = Checkbutton(top, text="Entropia", variable=check_entropy,
                          onvalue=1, offvalue=0, height=2, width=20)
         C2 = Checkbutton(top, text="Homogeneidade", variable=check_homogeneity,
                          height=2, width=20)
-        C3 = Checkbutton(top, text="Contraste", variable=check_contrast,
+        C3 = Checkbutton(top, text="Energia", variable=check_energy,
                          height=2, width=20)
         if entropy:
             C1.select()
         if homogeneity:
             C2.select()
-        if contrast:
+        if energy:
             C3.select()
         C1.pack()
         C2.pack()
@@ -238,12 +238,12 @@ def telaHaralick(selectTam_opened):
             homogeneity = True
         else:
             homogeneity = False
-        if check_contrast.get() == 1:
-            contrast = True
+        if check_energy.get() == 1:
+            energy = True
         else:
-            contrast = False
+            energy = False
         selectTam_opened = False
-        aux_cls = [entropy, homogeneity, contrast]
+        aux_cls = [entropy, homogeneity, energy]
         # print(aux_cls)
         msgbx.showinfo(title="Selecionar características",
                        message="As características marcadas foram selecionadas.")
@@ -256,15 +256,15 @@ def telaHaralick(selectTam_opened):
 def features(rgbImg, properties):
     grayImg = img_as_ubyte(color.rgb2gray(rgbImg))
     distances = [1, 2, 4, 8, 16]
-    angles = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+    angles = [0, np.pi/8, np.pi/4, np.pi/2, 3*np.pi/4, np.pi, 5*np.pi/4]
     matrix_coocurrence = greycomatrix(
-        grayImg, distances=distances, angles=angles, symmetric=True, normed=True)
+        grayImg, distances=distances, angles=angles, symmetric=True)
+    
     return(matrix_feature(matrix_coocurrence, properties))
 
 
 def matrix_feature(matrix_coocurrence, properties):
-    feature = np.hstack(
-        [greycoprops(matrix_coocurrence, prop).ravel() for prop in properties])
+    feature = np.hstack([greycoprops(matrix_coocurrence, prop).ravel() for prop in properties])
     return feature
 
 
@@ -276,38 +276,18 @@ def matrix_feature(matrix_coocurrence, properties):
 def haralick(grayImg):
     global aux_cls
     # Todas as opçoes
-    if aux_cls == [True, True, True]:
-        properties = ['homogeneity', 'energy', 'contrast']
-        return features(grayImg, properties)
-
-    # Homogeneidade e Energy
-    elif aux_cls == [True, True, False]:
-        properties = ['energy', 'homogeneity', 'constrast']
-        return features(grayImg, properties)
-
-    # Energy e Contraste
-    elif aux_cls == [True, False, True]:
-        properties = ['energy', 'homogeneity', 'contrast']
-        return features(grayImg, properties)
-
-    # Homogeneidade e Contraste
-    elif aux_cls == [False, True, True]:
-        properties = ['energy', 'homogeneity', 'contrast']
+    if aux_cls == [True, True]:
+        properties = ['homogeneity', 'ASM']
         return features(grayImg, properties)
 
     # Energy
-    elif aux_cls == [True, False, False]:
-        properties = ['energy', 'homogeneity', 'contrast']
+    elif aux_cls == [True, False]:
+        properties = ['ASM']
         return features(grayImg, properties)
 
     # Homogeneidade
-    elif aux_cls == [False, True, False]:
-        properties = ['energy','homogeneity', 'contrast']
-        return features(grayImg, properties)
-
-    # Contraste
-    elif aux_cls == [False, False, True]:
-        properties = ['energy','homogeneity', 'contrast']
+    elif aux_cls == [False, True]:
+        properties = ['homogeneity']
         return features(grayImg, properties)
 
 
@@ -448,6 +428,7 @@ def analisarArea():
     if aux_mlp != None:
         Img = io.imread(".new_image.png")
         analisar = haralick(Img)
+        # print(analisar)
         analisar = np.array(analisar)
         predição = aux_mlp.predict(analisar.reshape(1, -1))[0]
         #print("CLASSE DE PREDICAO: ", predição)
