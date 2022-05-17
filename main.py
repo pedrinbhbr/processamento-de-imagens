@@ -21,44 +21,35 @@ import time
 import cv2
 from PIL import Image, ImageTk
 
-''' ----------------------------------------- FIM IMPORTAÇÕES ---------------------------------------- '''
+' ----------------------------------------- FIM IMPORTAÇÕES ---------------------------------------- '
 
-# Criando a interface com o Tk()
+# instanciando a interface grafica
 janela = tk.Tk()
 janela.title("Reconhecimento de padrões por textura em imagens mamográficas")
 janela.geometry("1280x720")
-''' ------------------------------------------ FIM INTERFACE ----------------------------------------- '''
+' ------------------------------------------ FIM INTERFACE ----------------------------------------- '
 
-# Criando um canvas
+# canvas para botoes e imagens
 canvas = Canvas(janela, width=1280, height=720, background='#EEE')
-''' ------------------------------------------ FIM CANVAS -------------------------------------------- '''
+' ------------------------------------------ FIM CANVAS -------------------------------------------- '
 
-# As variavies image e aux, são variaveis globais para ABRIR IMAGEM
-# caso elas não estejam como globais não irá funcionar
-''' ------------------------------------------ FIM OBSEERVAÇÕES -------------------------------------- '''
-
-''' ------------------------------------------- '''
-# Variaveis para o Haralick e a Rede Neural
+' ------------------------------------------- '
+# Variaveis 
 aux_mlp = None
-escolha = 0
-aux_cls = [None, None, None]
-fim = 0
-inicio = 0
-''' ------------------------------------------- '''
+aux_cls = [None, None, None] # escolha das texturas de haralick
+fim = 0 # fim do treino da rede neural
+inicio = 0 # inicio do tempo de treino da rede neural
+' ------------------------------------------- '
 
-# -------------------------------------------- PARTE 1 ------------------------------------------------ #
-
-# Metodo para abrir a imagem e carrega-la dentro do canvas
-
-
+# abrir imagem
 def openImagen():
-    ''' Variavel global utilizada em outro metodo '''
+    ' Variavel global utilizada em outro metodo '
     global image
     global aux
     global val1
     global val2
     global name
-    ''' ----------------------------------------- '''
+    ' ----------------------------------------- '
     name = filedialog.askopenfilename(initialdir='', title="Imagens", filetypes=(
         ("png files", ".png"), ("jpg files", ".jpg*")))
     nameAux = name
@@ -73,10 +64,9 @@ def openImagen():
     val2 = aux.height()
 
 
-''' ------------------------------------------ FIM ABRIR IMAGEM ------------------------------------- '''
-# Aplica tons de cinza
+' ------------------------------------------ FIM ABRIR IMAGEM ------------------------------------- '
 
-
+# Alterar tons de cinza para 16
 def tons16():
     global tom
     img = cv2.imread(name, 0)
@@ -84,7 +74,7 @@ def tons16():
     imgQuant = np.uint8(img/r) * r
     tom = imgQuant
     cv2.imwrite(".new_image.png", imgQuant)
-    ''' Carrega a imagem no canvas '''
+    ' Carrega a imagem no canvas '
     im = Image.open(".new_image.png")
     aux = ImageTk.PhotoImage(image)
     canvas.config(width=aux.width(), height=aux.height())
@@ -94,11 +84,9 @@ def tons16():
     canvas.place(x=110, y=10)
 
 
-''' ------------------------------------------ FIM TONS DE CINZA 16 --------------------------------- '''
+' ------------------------------------------ FIM ALTERAR TONS DE CINZA 16 --------------------------------- '
 
-# Aplica tons de cinza
-
-
+# Alterar tons de cinza para 32
 def tons32():
     global tom
     img = cv2.imread(name, 0)
@@ -106,7 +94,7 @@ def tons32():
     imgQuant = np.uint8(img/r) * r
     tom = imgQuant
     cv2.imwrite(".new_image.png", imgQuant)
-    ''' Carrega a imagem no canvas '''
+    ' Carrega a imagem no canvas '
     im = Image.open(".new_image.png")
     aux = ImageTk.PhotoImage(im)
     canvas.config(width=aux.width(), height=aux.height())
@@ -116,18 +104,16 @@ def tons32():
     canvas.place(x=110, y=10)
 
 
-''' ------------------------------------------ FIM TONS DE CINZA 32 --------------------------------- '''
+' ------------------------------------------ FIM ALTERAR TONS DE CINZA 32 --------------------------------- '
 
-# histograma
-
-
+# histograma da imagem selecionada
 def histograma():
     img = cv2.imread(".new_image.png", 0)
     plt.hist(img.ravel(), 256, [0, 256])
     plt.show()
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    ''' Carrega a imagem no canvas '''
+    # Carrega a imagem no canvas
     im = Image.open(".new_image.png")
     aux = ImageTk.PhotoImage(im)
     canvas.config(width=aux.width(), height=aux.height())
@@ -137,11 +123,9 @@ def histograma():
     canvas.place(x=110, y=10)
 
 
-''' ------------------------------------------ FIM EQUALIZAÇÃO -------------------------------------- '''
+' ------------------------------------------ FIM HISTOGRAMA -------------------------------------- '
 
-# seleciona o tamanho de tons de cinza
-
-
+# tela para usuário selecionar o tamanho de tons de cinza
 def telaSelecao(selectTam_opened, tam):
     if not selectTam_opened:
         selectTam_opened = True
@@ -182,11 +166,9 @@ def telaSelecao(selectTam_opened, tam):
             tons32()
 
 
-''' ------------------------------------- FIM SELEÇÃO TONS DE CINZA --------------------------------- '''
+' ------------------------------------- FIM SELEÇÃO TONS DE CINZA --------------------------------- '
 
-# seleciona as opções do Haralick
-
-
+# tela para usuário selecionar os descritores de textura de haralick
 def telaHaralick(selectTam_opened):
     global aux_cls
     if not selectTam_opened:
@@ -196,13 +178,10 @@ def telaHaralick(selectTam_opened):
         entropy = False
         width = 400
         height = 350
-        # obtém metade da largura / altura da tela e largura / altura da janela
-        # criação de interface
         top = Toplevel()
         top.title("Selecionar")
         top.lift()
         top.resizable(False, False)
-        # posiciona a janela no centro da página
         top.geometry("%dx%d+%d+%d" % (width, height, 400, 350))
         l = Label(top, text='\n\nSelecionar características:\n')
         l.pack()
@@ -249,7 +228,7 @@ def telaHaralick(selectTam_opened):
                        message="As características marcadas foram selecionadas.")
 
 
-''' ------------------------------------- FIM SELEÇÃO HARALICK --------------------------------- '''
+' ------------------------------------- FIM TELA DE SELEÇÃO DESCRITORES HARALICK --------------------------------- '
 
 def Haralick(img):
     global aux_cls
@@ -259,8 +238,10 @@ def Haralick(img):
 
     dist = 1
     while dist <= 16:
+        # Calcula descritores de Haralick para cada direcao da matriz de coocorrencia 
         features = mahotas.features.haralick(final, distance=dist)
     
+        # Media da coluna para o descritor escolhido
         if(aux_cls[0]):
             #somar homogeneidade
             parcial = (features[0][4] + features[1][4] + features[2][4] + features[3][4])/4
@@ -279,15 +260,14 @@ def Haralick(img):
         dist*=2
     return result
 
+'------------------------------------- FIM HARALICK ---------------------------------'
 
-# Carrega as 400 imagens que o professor disponibilizou para o treino da rede neural
-
-
+# Carrega as 400 imagens para o treino da rede neural
 def directorio():
-    '''
-    Ao clicar em “Treinar Rede” o software abre uma caixa de diálogo do sistema para selecionar o diretório das imagens de treino. 
-    Ao confirmar a seleção de pastas, o software carrega as imagens modelo, presente em 4 subdiretórios numerados de 1 a 4.
-    '''
+    
+    # Clicando em "train network", selecione a pasta que tem os 4 diretorios com as imagens de treino
+    # Após a confirmação, o treinamento começa
+    
     imagens = []
     try:
         folder = filedialog.askdirectory()
@@ -305,11 +285,9 @@ def directorio():
                        message="Erro ao carregar imagens. Verifique a pasta!")
 
 
-'''----------------------------------------- FIM CARREGAR DIRETORIO ------------------------------- '''
+'----------------------------------------- FIM CARREGAMENTO DE IMAGENS ------------------------------- '
 
-# Treina a rede neural com as 400 imagens disponibilizadas pelo professor, alem de testar a matriz retornada do Haralick
-
-
+# Treina a rede neural
 def treinarRedeNeural():
     global aux_mlp
     global inicio
@@ -334,18 +312,18 @@ def treinarRedeNeural():
         tela.destroy()
         Ftreino = []
         Ltreino = []
-        '''
-        Ao clicar em “Treinar os classificadores” o software abre uma caixa de diálogo do sistema
-        para selecionar o diretório das imagens de treino. Ao confirmar a seleção de pastas, 
-        o software carrega as imagens modelo, presente em 4 subdiretórios numerados de 1 a 4. 
-        Após carregar as imagens, é chamado o método para treinar a rede neural, 
-        que utiliza as imagens carregadas e testa a matriz de concorrência retornada pelo método Haralick.
-        '''
+        
+        # Ao clicar em “Treinar os classificadores” o software abre uma caixa de diálogo do sistema
+        # para selecionar o diretório das imagens de treino. Ao confirmar a seleção de pastas, 
+        # o software carrega as imagens modelo, presente em 4 subdiretórios numerados de 1 a 4. 
+        # Após carregar as imagens, é chamado o método para treinar a rede neural, 
+        # que utiliza as imagens carregadas e testa a matriz de concorrência retornada pelo método Haralick.
+        
         # Definições dos rotulos
         for i in range(0, 400):
             Ltreino.append(int(i / 100) + 1)
         for img in img_matriz:
-            # Aplica o retorno do haralick no caso a matriz
+            # Aplica o retorno do haralick
             val = Haralick(img)
             Ftreino.append(val)
         # Para 4 classes com 25 imagens
@@ -376,23 +354,23 @@ def treinarRedeNeural():
         teste = np.concatenate(
             (teste1, teste2, teste3, teste4))
         # Rede neural sendo criada
-        '''
-        A rede neural foi construída utilizando a classe MLP Classifier da biblioteca Sklearn, automatizando a construção de uma rede neural multicamada. 
-        Optamos em usar o selecionador “ solver= 'adam' ” pois é o padrao da rede neural. aplicamos a quantidade de neurônios “ hidden_layer_sizes=(200,200,200) ”. 
-        Com isso o classificador foi preparado com as quatrocentas imagens recebidas e com a matriz da imagem gerada pelo Haralick. 
-        O teste foi realizado utilizando o predict que retorna os valores da classificação das imagens de teste.
-        Depois disso a rede neural está pronta para uso, com os dados recebidos foi possível gerar a matriz de confusão utilizando o confusion_matrix
-        '''
+        
+        # A rede neural foi construída utilizando a classe MLP Classifier da biblioteca Sklearn, automatizando a construção de uma rede neural multicamada. 
+        # Optei em usar o selecionador “ solver= 'lbfgs' ” pois tive resultados melhores em questão de tempo e acurácia. 
+        # aplicada a quantidade de neurônios “ hidden_layer_sizes=(200,200,200) ”. 
+        # O teste foi realizado utilizando o predict que retorna os valores da classificação das imagens de teste.
+        # Depois disso a rede neural está pronta para uso, com os dados recebidos foi possível gerar a matriz de confusão utilizando o confusion_matrix
+        
         mlp = MLPClassifier(
-            solver='lbfgs', hidden_layer_sizes=(200, 200), random_state=5)
+            solver='lbfgs', hidden_layer_sizes=(200, 200,200), random_state=5)
         mlp.fit(treinador, treino)
         aux_mlp = mlp
         aux_pred = mlp.predict(Ctreino)
-        '''
-        Após o treino da rede neural, o método gera a matriz de confusão. 
-        Com ela, é possível calcular a acurácia e especificidade do classificador.
-        '''
-        # Gera a matriz de confusão com os dados recebido da rede neural
+        
+        # Após o treino da rede neural, o método gera a matriz de confusão. 
+        # Com ela, é possível calcular a acurácia e especificidade do classificador.
+        
+        # a matriz de confusão
         matrix_confusion = confusion_matrix(teste, aux_pred)
         acu = acuracia(matrix_confusion)
         especife = especificidade(matrix_confusion)
@@ -403,22 +381,18 @@ def treinarRedeNeural():
             title="Atenção", message="Leia o diretório com as imagens de teste para poder treinar o classificador.")
 
 
-''' ------------------------------------------- FIM TREINAR REDE NEURAL -------------------------------- '''
+' ------------------------------------------- FIM TREINAR REDE NEURAL -------------------------------- '
 
-# Analisar area do corte
-
-
+# Analisar imagem
 def analisaImagem():
-    '''
-    Depois que a rede neural realiza o treinamento, a imagem de corte “.new_image.png”, 
-    primeiro verifica se o classificador existe, após isso realiza a predição da imagem recortada
-    e passa para o método de impressão sua classe de predição.
-    '''
+    
+    # Depois que a rede neural realiza o treinamento, 
+    # eh verificado se o classificador existe, após isso realiza a predição da imagem selecionada
+    # e passa para o método de impressão sua classe de predição.
+    
     global aux_mlp
     if aux_mlp != None:
-        # Img = io.imread(".new_image.png")
         Img = cv2.imread(".new_image.png")
-        # Img = PIL.Image.open(".new_image.png")
         analisar = Haralick(Img)
         # print(analisar)
         analisar = np.array(analisar)
@@ -430,32 +404,24 @@ def analisaImagem():
                        message="Rede ainda não foi treinada.")
 
 
-''' ------------------------------------------- FIM ANALISAR AREA -------------------------------------------- '''
+' ------------------------------------------- FIM ANALISAR AREA -------------------------------------------- '
 
-# A sensibilidade média = acurácia = Σi=1..4 Mi,i /100
-
-
+#acurácia = Σi=1..4 Mi,i /100
 def acuracia(matriz):
-    '''
-    Na função criada, a acurácia recebe a matriz de confusão, 
-    realiza o cálculo da diagonal principal da matriz e divide para quantidade de imagens de teste no caso cem.
-    '''
+    # a acurácia recebe a matriz de confusão, 
+    # realiza o cálculo da diagonal principal da matriz e divide para quantidade de imagens de teste(4*25=100).
     result = 0
     for i in range(0, 4):
         result += matriz[i][i]
     return result / 100
 
 
-''' ------------------------------------------- FIM PRECISÃO ------------------------------------------------- '''
+' ------------------------------------------- FIM ACURÁCIA ------------------------------------------------- '
 
-# A especificidade = 1- Σi=1..4 Σj≠i Mj,i / 300
-
-
+#especificidade = 1- Σi=1..4 Σj≠i Mj,i / 300
 def especificidade(matriz):
-    '''
-    Na função criada, a especificidade utiliza os valores restantes 
-    e divide pela quantidade de imagens do treinamento da rede neural no caso trezentos.
-    '''
+    # Na função criada, a especificidade utiliza os valores restantes 
+    # e divide pela quantidade de imagens do treinamento da rede neural(4*74=300).
     result = 0
     for i in range(0, 4):
         for j in range(0, 4):
@@ -465,11 +431,9 @@ def especificidade(matriz):
     return result
 
 
-''' ------------------------------------------- FIM ESPECIFICAÇÃO ------------------------------------------- '''
+' ------------------------------------------- FIM ESPECIFICIDADE ------------------------------------------- '
 
-# Printa a especificidade, precisão e a matriz de confusão
-
-
+# Print tempo de treino da rede neural, especificidade, acurácia e matriz de confusão
 def print_valRede(matriz, espec, acc,fim):
     fim = str(fim)
     aux = fim.split('.')
@@ -497,11 +461,9 @@ def print_valRede(matriz, espec, acc,fim):
     text.pack()
 
 
-'''------------------------------------------------- FIM PRINT REDE --------------------------------------------- '''
+'------------------------------------------------- FIM PRINT DADOS --------------------------------------------- '
 
-# Printa a analise do corte no caso sua classe predita
-
-
+# Print a analise da imagem no caso sua classe predita
 def print_valCorte(info):
     width = 300
     height = 100
@@ -518,7 +480,7 @@ def print_valCorte(info):
     text.pack()
 
 
-''' ------------------------------------------------ FIM PRINTA VALORES ------------------------------------------ '''
+' ------------------------------------------------ FIM PRINTA VALORES ------------------------------------------ '
 
 # Botoes dentro do Tk()
 
@@ -542,7 +504,7 @@ bt5.place(bordermode=tk.OUTSIDE, height=40, width=80, x=0, y=160)
 bt6 = tk.Button(janela, text="Specs",
                  command=lambda: analisaImagem())
 bt6.place(bordermode=tk.OUTSIDE, height=40, width=80, x=0, y=200)
-''' ------------------------------------------ FIM BOTOES ------------------------------------------ '''
+' ------------------------------------------ FIM BOTOES ------------------------------------------ '
 
 janela.mainloop()
-''' ------------------------------------------ FIM PROGRAMA ---------------------------------------- '''
+' ------------------------------------------ FIM PROGRAMA ---------------------------------------- '
