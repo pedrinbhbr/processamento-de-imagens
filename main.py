@@ -102,7 +102,7 @@ def tons16():
 def tons32():
     global tom
     img = cv2.imread(name, 0)
-    r = 8
+    r = 7
     imgQuant = np.uint8(img/r) * r
     tom = imgQuant
     cv2.imwrite(".new_image.png", imgQuant)
@@ -191,9 +191,9 @@ def telaHaralick(selectTam_opened):
     global aux_cls
     if not selectTam_opened:
         selectTam_opened = True
-        entropy = False
         homogeneity = False
         energy = False
+        entropy = False
         width = 400
         height = 350
         # obtém metade da largura / altura da tela e largura / altura da janela
@@ -206,20 +206,20 @@ def telaHaralick(selectTam_opened):
         top.geometry("%dx%d+%d+%d" % (width, height, 400, 350))
         l = Label(top, text='\n\nSelecionar características:\n')
         l.pack()
-        check_entropy = IntVar()
         check_homogeneity = IntVar()
         check_energy = IntVar()
-        C1 = Checkbutton(top, text="Entropia", variable=check_entropy,
-                         onvalue=1, offvalue=0, height=2, width=20)
-        C2 = Checkbutton(top, text="Homogeneidade", variable=check_homogeneity,
+        check_entropy = IntVar()
+        C1 = Checkbutton(top, text="Homogeneidade", variable=check_homogeneity,onvalue=1, offvalue=0,
                          height=2, width=20)
-        C3 = Checkbutton(top, text="Energia", variable=check_energy,
+        C2 = Checkbutton(top, text="Energia", variable=check_energy,
                          height=2, width=20)
-        if entropy:
-            C1.select()
+        C3 = Checkbutton(top, text="Entropia", variable=check_entropy,
+                         height=2, width=20)
         if homogeneity:
-            C2.select()
+            C1.select()
         if energy:
+            C2.select()
+        if entropy:
             C3.select()
         C1.pack()
         C2.pack()
@@ -230,10 +230,6 @@ def telaHaralick(selectTam_opened):
             top.destroy()
         top.protocol("WM_DELETE_WINDOW", on_closing)
         top.mainloop()
-        if check_entropy.get() == 1:
-            entropy = True
-        else:
-            entropy = False
         if check_homogeneity.get() == 1:
             homogeneity = True
         else:
@@ -242,56 +238,47 @@ def telaHaralick(selectTam_opened):
             energy = True
         else:
             energy = False
+        if check_entropy.get() == 1:
+            entropy = True
+        else:
+            entropy = False
         selectTam_opened = False
-        aux_cls = [entropy, homogeneity, energy]
+        aux_cls = [homogeneity, energy, entropy]
         # print(aux_cls)
         msgbx.showinfo(title="Selecionar características",
                        message="As características marcadas foram selecionadas.")
 
 
 ''' ------------------------------------- FIM SELEÇÃO HARALICK --------------------------------- '''
-# Homogeneidade do Haralick
 
-
-def features(rgbImg, properties):
-    grayImg = img_as_ubyte(color.rgb2gray(rgbImg))
-    distances = [1, 2, 4, 8, 16]
-    angles = [0, np.pi/8, np.pi/4, np.pi/2, 3*np.pi/4, np.pi, 5*np.pi/4]
-    matrix_coocurrence = greycomatrix(
-        grayImg, distances=distances, angles=angles, symmetric=True)
-    
-    return(matrix_feature(matrix_coocurrence, properties))
-
-
-def matrix_feature(matrix_coocurrence, properties):
-    feature = np.hstack([greycoprops(matrix_coocurrence, prop).ravel() for prop in properties])
-    return feature
-
-
-''' ---------------------- FIM FEATURES -------------------------------------------------- '''
-
-# Chama o metodo da textura do Haralick
-
-
-def haralick(grayImg):
+def Haralick(img):
     global aux_cls
-    # Todas as opçoes
-    if aux_cls == [True, True]:
-        properties = ['homogeneity', 'ASM']
-        return features(grayImg, properties)
+    result = []
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    final = gray.astype(int)
 
-    # Energy
-    elif aux_cls == [True, False]:
-        properties = ['ASM']
-        return features(grayImg, properties)
+    dist = 1
+    while dist <= 16:
+        features = mahotas.features.haralick(final, distance=dist)
+    
+        if(aux_cls[0]):
+            #somar homogeneidade
+            parcial = (features[0][4] + features[1][4] + features[2][4] + features[3][4])/4
+            result.append(parcial)
 
-    # Homogeneidade
-    elif aux_cls == [False, True]:
-        properties = ['homogeneity']
-        return features(grayImg, properties)
+        elif(aux_cls[1]):
+            #somar energia
+            parcial = (features[0][8] + features[1][8] + features[2][8] + features[3][8])/4
+            result.append(parcial)
 
+        elif(aux_cls[2]):
+            #somar entropia
+            parcial = (features[0][0] + features[1][0] + features[2][0] + features[3][0])/4
+            result.append(parcial)
 
-''' ------------------------------------ FIM HARALICK ------------------------------------------- '''
+        dist*=2
+    return result
+
 
 # Carrega as 400 imagens que o professor disponibilizou para o treino da rede neural
 
@@ -359,7 +346,7 @@ def treinarRedeNeural():
             Ltreino.append(int(i / 100) + 1)
         for img in img_matriz:
             # Aplica o retorno do haralick no caso a matriz
-            val = haralick(Img)
+            val = Haralick(img)
             Ftreino.append(val)
         # Para 4 classes com 25 imagens
         classificador1, classificador2, classificador3, classificador4 = np.array_split(
@@ -370,10 +357,13 @@ def treinarRedeNeural():
         # Classificar os 25% das imagens restantes
         treinador1, Ctreino1, treino1, teste1 = train_test_split(
             classificador1, classifica1, test_size=0.25, random_state=1)
+
         treinador2, Ctreino2, treino2, teste2 = train_test_split(
             classificador2, classifica2, test_size=0.25, random_state=1)
+
         treinador3, Ctreino3, treino3, teste3 = train_test_split(
             classificador3, classifica3, test_size=0.25, random_state=1)
+
         treinador4, Ctreino4, treino4, teste4 = train_test_split(
             classificador4, classifica4, test_size=0.25, random_state=1)
         # Recebendo os dados gerados
@@ -394,7 +384,7 @@ def treinarRedeNeural():
         Depois disso a rede neural está pronta para uso, com os dados recebidos foi possível gerar a matriz de confusão utilizando o confusion_matrix
         '''
         mlp = MLPClassifier(
-            solver='adam', hidden_layer_sizes=(200, 200, 200))
+            solver='lbfgs', hidden_layer_sizes=(200, 200), random_state=5)
         mlp.fit(treinador, treino)
         aux_mlp = mlp
         aux_pred = mlp.predict(Ctreino)
@@ -418,7 +408,7 @@ def treinarRedeNeural():
 # Analisar area do corte
 
 
-def analisarArea():
+def analisaImagem():
     '''
     Depois que a rede neural realiza o treinamento, a imagem de corte “.new_image.png”, 
     primeiro verifica se o classificador existe, após isso realiza a predição da imagem recortada
@@ -426,8 +416,10 @@ def analisarArea():
     '''
     global aux_mlp
     if aux_mlp != None:
-        Img = io.imread(".new_image.png")
-        analisar = haralick(Img)
+        # Img = io.imread(".new_image.png")
+        Img = cv2.imread(".new_image.png")
+        # Img = PIL.Image.open(".new_image.png")
+        analisar = Haralick(Img)
         # print(analisar)
         analisar = np.array(analisar)
         predição = aux_mlp.predict(analisar.reshape(1, -1))[0]
@@ -548,7 +540,7 @@ bt5 = tk.Button(janela, text="Neural\n network",
 bt5.place(bordermode=tk.OUTSIDE, height=40, width=80, x=0, y=160)
 
 bt6 = tk.Button(janela, text="Specs",
-                 command=lambda: analisarArea())
+                 command=lambda: analisaImagem())
 bt6.place(bordermode=tk.OUTSIDE, height=40, width=80, x=0, y=200)
 ''' ------------------------------------------ FIM BOTOES ------------------------------------------ '''
 
